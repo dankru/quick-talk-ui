@@ -1,15 +1,12 @@
 // src/App.tsx
 import React from 'react';
-import './App.css';
-import Chat from './components/chat/chat';
+import './App.scss';
+import Chat from './components/chat/Chat';
 
+const serega = "Seryojka"
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>AI Chat Assistant</h1>
-        <p>Общайтесь с искусственным интеллектом</p>
-      </header>
       <main className="App-main">
         <Chat />
       </main>

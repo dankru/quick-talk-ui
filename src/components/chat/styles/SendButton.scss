@@ -1,0 +1,57 @@
+// src/components/Chat/styles/sendButton.scss
+.send-button {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #5c7c8a;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  z-index: 2;
+  
+  &:hover:not(:disabled) {
+    background-color: #4a6673;
+    transform: scale(1.05);
+  }
+  
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+  
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: #3a3a3a;
+  }
+}
+
+.send-icon {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  
+  path {
+    stroke: #d4d4d4;
+  }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(212, 212, 212, 0.3);
+  border-radius: 50%;
+  border-top-color: #d4d4d4;
+  animation: spin 0.8s linear infinite;
+  margin: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

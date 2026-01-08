@@ -2,26 +2,30 @@
 .App {
   text-align: center;
   min-height: 100vh;
-  background-color: #282c34;
+  background-color: #171717; 
 }
 
 .App-header {
-  background-color: #20232a;
+  background-color: #1a1a1a; 
   padding: 20px;
-  color: white;
+  color: #f0f0f0;
+  border-bottom: 1px solid #2a2a2a; 
 }
 
 .App-header h1 {
   margin: 0;
   font-size: 2.5rem;
+  color: #ffffff;
 }
 
 .App-header p {
   margin: 10px 0 0;
-  opacity: 0.8;
+  opacity: 0.7;
+  color: #b0b0b0;
 }
 
 .App-main {
   padding: 20px;
-  color: white;
+  color: #e5e5e5;
+  background-color: #171717; 
 }
