@@ -10,9 +10,6 @@ interface MessageProps {
 const Message: React.FC<MessageProps> = ({ message }) => {
   return (
     <div className={`message ${message.sender}`}>
-      <div className="message-sender">
-        {message.sender === 'user' ? 'Вы' : 'AI'}
-      </div>
       <div className="message-content">
         {message.content}
       </div>
