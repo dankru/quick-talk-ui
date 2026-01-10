@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { isTokenExpired, parseJwt, DecodedToken } from '../utils/jwt';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { parseJwt, isTokenExpired } from '../utils/jwt';
 
 interface User {
   id: string;
@@ -11,155 +11,125 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  isAuthenticated: boolean;
   isLoading: boolean;
-  isAuthenticated: boolean; // ← добавляем
+  login(email: string, password: string): Promise<void>;
+  register(login: string, email: string, password: string): Promise<void>;
+  logout(): void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
     throw new Error('useAuth must be used within AuthProvider');
   }
-  return context;
+  return ctx;
 };
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // ← добавляем
 
-  // При загрузке приложения проверяем сохраненный токен
+  // init
   useEffect(() => {
-    try {
-      const savedToken = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-      
-      if (savedToken) {
-        // Проверяем не истек ли токен
-        if (isTokenExpired(savedToken)) {
-          // Токен истек - очищаем
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        } else {
-          setToken(savedToken);
-          setIsAuthenticated(true);
-          
-          // Если есть данные пользователя - парсим
-          if (savedUser) {
-            try {
-              const parsedUser = JSON.parse(savedUser);
-              setUser(parsedUser);
-            } catch {
-              // Если ошибка парсинга - создаем из токена
-              const decoded = parseJwt(savedToken);
-              if (decoded) {
-                const userFromToken: User = {
-                  id: decoded.user_id,
-                  email: decoded.email,
-                  login: decoded.login,
-                };
-                setUser(userFromToken);
-              }
-            }
-          } else {
-            // Если нет данных пользователя - создаем из токена
-            const decoded = parseJwt(savedToken);
-            if (decoded) {
-              const userFromToken: User = {
-                id: decoded.user_id,
-                email: decoded.email,
-                login: decoded.login,
-              };
-              setUser(userFromToken);
-              localStorage.setItem('user', JSON.stringify(userFromToken));
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Ошибка при загрузке данных из localStorage:', error);
-      // Если ошибка - очищаем всё
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    } finally {
+    const savedToken = localStorage.getItem('token');
+    if (!savedToken || isTokenExpired(savedToken)) {
+      cleanup();
       setIsLoading(false);
+      return;
     }
+
+    const decoded = parseJwt(savedToken);
+    if (!decoded) {
+      cleanup();
+      setIsLoading(false);
+      return;
+    }
+
+    setToken(savedToken);
+    setUser({
+      id: decoded.user_id,
+      email: decoded.email,
+      login: decoded.login,
+    });
+    setIsAuthenticated(true);
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await fetch('http://localhost:8000/user/sign-in', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+    const res = await fetch(`${API_URL}/user/sign-in`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Ошибка авторизации: ${errorText}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.token) {
-        throw new Error('Токен не получен от сервера');
-      }
-      
-      // Парсим JWT чтобы получить данные пользователя
-      const decoded = parseJwt(data.token);
-      if (!decoded) {
-        throw new Error('Невалидный токен');
-      }
-      
-      // Проверяем не истек ли токен (на всякий случай)
-      if (isTokenExpired(data.token)) {
-        throw new Error('Токен истек');
-      }
-      
-      const userFromToken: User = {
-        id: decoded.user_id,
-        email: decoded.email,
-        login: decoded.login,
-      };
-      
-      // Сохраняем токен и данные пользователя
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(userFromToken));
-      
-      setToken(data.token);
-      setUser(userFromToken);
-      setIsAuthenticated(true);
-      
-    } catch (error) {
-      console.error('Ошибка входа:', error);
-      throw error;
+    if (!res.ok) {
+      throw new Error('Auth failed');
     }
+
+    const { token } = await res.json();
+    const decoded = parseJwt(token);
+
+    if (!decoded || isTokenExpired(token)) {
+      throw new Error('Invalid token');
+    }
+
+    const user: User = {
+      id: decoded.user_id,
+      email: decoded.email,
+      login: decoded.login,
+    };
+
+    localStorage.setItem('token', token);
+    setToken(token);
+    setUser(user);
+    setIsAuthenticated(true);
+  };
+
+  const register = async (login: string, email: string, password: string) => {
+    const res = await fetch(`${API_URL}/user/sign-up`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ login, email, password }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Register failed');
+    }
+
+    // ВАЖНО: ничего не логиним
   };
 
   const logout = () => {
+    cleanup();
+  };
+
+  const cleanup = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      token, 
-      login, 
-      logout, 
-      isLoading,
-      isAuthenticated // ← добавляем в контекст
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isAuthenticated,
+        isLoading,
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

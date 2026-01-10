@@ -1,32 +1,31 @@
 // src/pages/Login.tsx
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header/Header';
-import { useAuth } from '../contexts/AuthContext'; 
+import { useAuth } from '../contexts/AuthContext';
 import './AuthPages.scss';
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      // Используем функцию из контекста
       await login(email, password);
       navigate('/chat');
-    } catch (err) {
+    } catch {
       setError('Неверный email или пароль');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -36,40 +35,31 @@ const Login: React.FC = () => {
       <div className="auth-page">
         <div className="auth-card">
           <h2>Вход</h2>
-          
+
           {error && <div className="error">{error}</div>}
-          
-          <form onSubmit={handleSubmit}>
+
+          <form onSubmit={submit}>
             <input
               type="email"
-              placeholder="Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Email"
               required
-              disabled={isLoading}
             />
-            
             <input
               type="password"
-              placeholder="Пароль"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Пароль"
               required
-              disabled={isLoading}
             />
-            
-            <button 
-              type="submit" 
-              className="btn-primary" 
-              disabled={isLoading}
-            >
-              {isLoading ? 'Вход...' : 'Войти'}
+            <button disabled={loading}>
+              {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
-          
+
           <p>
-            Нет аккаунта?{' '}
-            <Link to="/register">Зарегистрироваться</Link>
+            Нет аккаунта? <Link to="/register">Регистрация</Link>
           </p>
         </div>
       </div>
